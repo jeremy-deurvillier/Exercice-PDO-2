@@ -17,10 +17,13 @@ function createPatient($lastname, $firstname, $birthDate, $phone, $email) {
 }
 
 // Liste les patients
-function getAllPatients() {
+function getAllPatients($perPage = 3, $page = 0) {
     global $db;
 
-    $request = $db->query('SELECT * FROM patients ORDER BY lastname ASC;');
+    $request = $db->prepare('SELECT * FROM patients ORDER BY lastname ASC LIMIT :perpage OFFSET :page;');
+    $request->bindValue(':perpage', $perPage, PDO::PARAM_INT);
+    $request->bindValue(':page', $perPage * $page, PDO::PARAM_INT);
+    $request->execute();
     $patientList = $request->fetchAll(PDO::FETCH_ASSOC);
 
     return $patientList;
@@ -138,6 +141,38 @@ function deletePatient($id) {
     $request = $db->prepare('DELETE FROM patients WHERE id = :id;');
     $request->bindValue(':id', $id, PDO::PARAM_INT);
     $request->execute();
+}
+
+// Recherche un patient par son nom
+function getSearch($search) {
+    global $db;
+
+    $request = $db->prepare('SELECT * FROM patients WHERE lastname LIKE :search;');
+    $request->bindValue(':search', $search . '%', PDO::PARAM_STR);
+    $request->execute();
+    $patients = $request->fetchAll();
+
+    return $patients;
+}
+
+// Compte le nombre de patients
+function countPatients() {
+    global $db;
+
+    $request = $db->query('SELECT COUNT(*) AS total FROM patients;');
+    $total = $request->fetch();
+
+    return $total;
+}
+
+// Retourne le dernier id inséré dans la table patients
+function getLastIDInsert() {
+    global $db;
+
+    $request = $db->query('SELECT MAX(id) AS id FROM patients;');
+    $total = $request->fetch();
+
+    return $total;
 }
 
 ?>

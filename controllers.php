@@ -27,8 +27,8 @@ if (isset($_POST['addPatient'])) {
 }
 
 // ????
-function showPatients() {
-    $patientsList = getAllPatients();
+function showPatients($perPage = 3, $page = 0) {
+    $patientsList = getAllPatients($perPage, $page);
     $HTMLList = '';
 
     if (count($patientsList) > 0) {
@@ -86,7 +86,8 @@ if (isset($_POST['updatePatient'])) {
 
 // ????
 function showSelectPatients() {
-    $patientsList = getAllPatients();
+    $totalPatients = countPatients()['total'];
+    $patientsList = getAllPatients($totalPatients, 0);
     $HTMLList = '';
 
     if (count($patientsList) > 0) {
@@ -229,8 +230,55 @@ if (isset($_GET['deletePatientId']) && !empty($_GET['deletePatientId'])) {
     removePatient();
 }
 
-if (isset($_POST['submitSearch']) && !empty($_POST['submitSearch'])) {
-    var_dump($_POST['search']);
+function search() {
+    $searchIsOk = (isset($_GET['search']) && !empty($_GET['search']));
+    $patientsSearched = ($searchIsOk)?getSearch(strval($_GET['search'])):[];
+    $HTMLList = '';
+
+    if (count($patientsSearched) > 0) {
+        $HTMLList .= '<ul>';
+
+        foreach($patientsSearched as $patient) {
+            $HTMLList .= '<li><a href="/profil-patient.php?pid=' . $patient['id'] . '">' . $patient['lastname'] . ' ' . $patient['firstname'] . '</a>';
+            $HTMLList .= '<a href="controllers.php?deletePatientId=' . $patient['id'] . '">[Supprimer]</a></li>';
+        }
+
+        $HTMLList .= '</ul>';
+    } else {
+        $HTMLList .= '<p>Aucun patient avec ces critères de recherche.</p>';
+    }
+
+    return $HTMLList;
+}
+
+// Nouveau patient ET nouveau rendez-vous
+function addNewPatient() {
+    $lastNameIsOK = isset($_POST['lastname']) && !empty($_POST['lastname']);
+    $firstNameIsOK = isset($_POST['firstname']) && !empty($_POST['firstname']);
+    $birthDateIsOK = isset($_POST['birthDate']) && !empty($_POST['birthDate']);
+    $phoneIsOK = isset($_POST['phone']) && !empty($_POST['phone']);
+    $mailIsOK = isset($_POST['email']) && !empty($_POST['email']);
+    $dateIsOK = isset($_POST['date']) && !empty($_POST['date']);
+    $hourIsOK = isset($_POST['hour']) && !empty($_POST['hour']);
+
+    if ($lastNameIsOK && $firstNameIsOK && $birthDateIsOK && $phoneIsOK && $mailIsOK && $dateIsOK && $hourIsOK) {
+        $patientAdding = createPatient($_POST['lastname'], $_POST['firstname'], $_POST['birthDate'], $_POST['phone'], $_POST['email']);
+        $lastId = getLastIDInsert()['id'];
+        $dateHour = date('Y-m-d H:i:s', strtotime($_POST['date'] . ' ' . $_POST['hour']));
+        $appointmentAdding = createAppointment($dateHour, $lastId);
+
+        if ($patientAdding === 'OK' && $appointmentAdding === 'OK') {
+            header('Location:liste-patients.php');
+        } else {
+            header('Location:ajout-patient-rendez-vous.php');
+        }
+    } else {
+        header('Location:ajout-patient-rendez-vous.php');
+    }
+}
+
+if (isset($_POST['addNew'])) {
+    addNewPatient();
 }
 
 ?>
